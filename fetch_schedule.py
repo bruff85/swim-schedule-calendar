@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+ #!/usr/bin/env python3
 """
 Swim Schedule Calendar Generator
 
@@ -240,6 +240,14 @@ def main():
         
         # Extract text via OCR
         ocr_text = extract_text_from_image(image)
+        
+        # DEBUG: Print full OCR output
+        print("\n" + "=" * 60)
+        print("FULL OCR TEXT OUTPUT")
+        print("=" * 60)
+        print(ocr_text)
+        print("=" * 60)
+        print()
         
         # Try to parse week from OCR
         week_start = parse_schedule_week(ocr_text)
