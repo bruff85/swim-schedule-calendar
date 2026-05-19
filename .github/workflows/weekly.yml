@@ -1,0 +1,42 @@
+name: Update Swim Schedule
+
+on:
+  schedule:
+    # Run every Sunday at 11:00 PM Pacific Time (7:00 AM UTC Monday)
+    - cron: '0 7 * * 1'
+  
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  update-schedule:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr
+      
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run schedule fetcher
+        run: python fetch_schedule.py
+      
+      - name: Commit and push updated files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/*.ics
+          git diff --staged --quiet || git commit -m "Update swim schedule for week of $(date +'%Y-%m-%d')"
+          git push
