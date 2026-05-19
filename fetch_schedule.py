@@ -104,39 +104,50 @@ Important:
 - Return ONLY the JSON, no other text"""
 
     # Call Anthropic API
-    response = requests.post(
-        "https://api.anthropic.com/v1/messages",
-        headers={
-            "Content-Type": "application/json",
-            "x-api-key": api_key,
-            "anthropic-version": "2023-06-01"
-        },
-        json={
-            "model": "claude-sonnet-4-20250514",
-            "max_tokens": 2000,
-            "messages": [{
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": media_type,
-                            "data": image_data
+    try:
+        response = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "Content-Type": "application/json",
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01"
+            },
+            json={
+                "model": "claude-sonnet-4-20250514",
+                "max_tokens": 2000,
+                "messages": [{
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": media_type,
+                                "data": image_data
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": prompt
                         }
-                    },
-                    {
-                        "type": "text",
-                        "text": prompt
-                    }
-                ]
-            }]
-        },
-        timeout=60
-    )
-    
-    response.raise_for_status()
-    result = response.json()
+                    ]
+                }]
+            },
+            timeout=60
+        )
+        
+        # Debug output
+        print(f"API Response Status: {response.status_code}")
+        if response.status_code != 200:
+            print(f"API Response Body: {response.text}")
+        
+        response.raise_for_status()
+        result = response.json()
+        
+    except requests.exceptions.HTTPError as e:
+        print(f"ERROR: API request failed with status {response.status_code}")
+        print(f"Response: {response.text}")
+        raise
     
     # Extract the text response
     response_text = result['content'][0]['text']
