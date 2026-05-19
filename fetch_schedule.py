@@ -64,6 +64,10 @@ def extract_schedule_with_claude(image_data, media_type, classes):
     if not api_key:
         raise ValueError("ANTHROPIC_API_KEY environment variable not set")
     
+    # Debug: confirm API key is loaded
+    print(f"API Key loaded: {api_key[:20]}..." if api_key else "NO API KEY")
+    print(f"API Key format valid: {api_key.startswith('sk-ant-') if api_key else False}")
+    
     # Build the prompt
     classes_list = ', '.join(classes)
     prompt = f"""Please analyze this swim practice schedule image and extract the practice times for these specific classes: {classes_list}
@@ -113,7 +117,7 @@ Important:
                 "anthropic-version": "2023-06-01"
             },
             json={
-                "model": "claude-sonnet-4-20250514",
+                "model": "claude-opus-4-1",
                 "max_tokens": 2000,
                 "messages": [{
                     "role": "user",
