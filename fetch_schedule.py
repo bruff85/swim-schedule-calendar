@@ -1,21 +1,19 @@
- #!/usr/bin/env python3
+#!/usr/bin/env python3
 """
-Swim Schedule Calendar Generator
+Swim Schedule Calendar Generator - Anthropic API Version
 
-Scrapes the Spartans swim schedule page, extracts the schedule image,
-uses OCR to read class times, and generates individual ICS files for each class.
+Uses Claude to read the swim schedule image and extract practice times.
+Generates individual ICS files for each tracked class.
 """
 
 import os
 import re
 import json
-import hashlib
+import base64
 import uuid
 from datetime import datetime, timedelta
 from io import BytesIO
 import requests
-from PIL import Image
-import pytesseract
 
 
 def load_config():
@@ -26,123 +24,152 @@ def load_config():
 
 def find_schedule_image_url(html_content):
     """Extract the schedule image URL from the HTML"""
-    # Look for image URLs in UserFiles/Image/QuickUpload/ that contain schedule or date patterns
     pattern = r'src="(/spartansla/UserFiles/Image/QuickUpload/[^"]+\.(?:jpg|jpeg|png))"'
     matches = re.findall(pattern, html_content, re.IGNORECASE)
     
     if not matches:
         raise ValueError("Could not find schedule image in HTML")
     
-    # Return the first match (usually the most recent schedule)
-    # The swim site typically shows the current week's schedule first
     return "https://www.spartanswim.com" + matches[0]
 
 
 def download_image(url):
-    """Download image from URL and return PIL Image object"""
+    """Download image and return base64 encoded data"""
     print(f"Downloading schedule image from: {url}")
     headers = {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
     }
     response = requests.get(url, headers=headers, timeout=30)
     response.raise_for_status()
-    return Image.open(BytesIO(response.content))
-
-
-def extract_text_from_image(image):
-    """Use OCR to extract text from schedule image"""
-    print("Running OCR on schedule image...")
-    # Tesseract OCR
-    text = pytesseract.image_to_string(image)
-    return text
-
-
-def parse_schedule_week(text):
-    """Extract the week date range from the schedule"""
-    # Look for patterns like "5/18 - 5/24" or "Schedule 5/18-5/24"
-    match = re.search(r'(\d{1,2})/(\d{1,2})\s*-\s*(\d{1,2})/(\d{1,2})', text)
-    if match:
-        start_month, start_day, end_month, end_day = match.groups()
-        current_year = datetime.now().year
-        start_date = datetime(current_year, int(start_month), int(start_day))
-        return start_date
-    return None
-
-
-def parse_class_schedule(text, class_name):
-    """
-    Parse the OCR text to find schedule for a specific class.
-    Returns dict of {day_of_week: [(start_time, end_time, location), ...]}
-    """
-    schedule = {
-        'Monday': [],
-        'Tuesday': [],
-        'Wednesday': [],
-        'Thursday': [],
-        'Friday': [],
-        'Saturday': [],
-        'Sunday': []
-    }
     
-    # Find the line containing the class name
-    lines = text.split('\n')
-    class_line_idx = None
-    for i, line in enumerate(lines):
-        if class_name.lower() in line.lower():
-            class_line_idx = i
-            break
+    # Determine media type from URL
+    if url.lower().endswith('.png'):
+        media_type = "image/png"
+    elif url.lower().endswith(('.jpg', '.jpeg')):
+        media_type = "image/jpeg"
+    else:
+        media_type = "image/jpeg"  # default
     
-    if class_line_idx is None:
-        print(f"  WARNING: Could not find '{class_name}' in OCR text")
-        return schedule
+    # Encode to base64
+    image_data = base64.standard_b64encode(response.content).decode('utf-8')
     
-    # The schedule typically appears on the same line or next few lines
-    # Look for time patterns like "5:15-6:00", "4:30-5:30PM", etc.
-    context_lines = lines[class_line_idx:min(class_line_idx + 3, len(lines))]
-    full_context = ' '.join(context_lines)
-    
-    # Find all time patterns
-    time_pattern = r'(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?'
-    times = re.findall(time_pattern, full_context, re.IGNORECASE)
-    
-    # This is a simplified parser - in practice we'd need to map times to days
-    # For now, return what we found and we'll manually verify
-    print(f"  Found {len(times)} time slots for {class_name}")
-    
-    # NOTE: Full parsing would require understanding the table structure
-    # For MVP, we'll use a fallback approach with manual time entry
-    return schedule
+    return image_data, media_type
 
 
-def manual_schedule_entry(class_name, week_start):
-    """
-    Manual schedule entry as fallback for OCR parsing.
-    This should be replaced with your actual observed schedule.
-    """
-    # Based on the screenshot you provided:
-    schedules = {
-        'Sharknado 2': {
-            'Monday': [('17:15', '18:00', 'Niyoosha')],
-            'Tuesday': [('16:30', '17:30', 'Niyoosha')],
-            'Wednesday': [('17:30', '18:30', 'Yoga')],
-            'Thursday': [('18:15', '19:00', 'SS')],
-            'Saturday': [('13:45', '15:00', 'Kailee')]
+def extract_schedule_with_claude(image_data, media_type, classes):
+    """Use Anthropic API to extract schedule from image"""
+    print("Sending image to Claude for schedule extraction...")
+    
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
+    if not api_key:
+        raise ValueError("ANTHROPIC_API_KEY environment variable not set")
+    
+    # Build the prompt
+    classes_list = ', '.join(classes)
+    prompt = f"""Please analyze this swim practice schedule image and extract the practice times for these specific classes: {classes_list}
+
+For each class, I need:
+- The week date range (e.g., "5/18 - 5/24")
+- For each day of the week (Monday through Sunday), list all practice sessions with:
+  - Start time
+  - End time  
+  - Coach/Location name (the text in each cell like "Niyoosha", "SS", "Yoga", "Kailee", etc.)
+  - If a day shows "OFF", skip it (no practice that day)
+
+Please respond with ONLY valid JSON in this exact format:
+
+{{
+  "week_start": "5/18/2026",
+  "classes": {{
+    "Sharknado 2": {{
+      "Monday": [{{"start": "17:15", "end": "18:00", "coach": "Niyoosha"}}],
+      "Tuesday": [{{"start": "16:30", "end": "17:30", "coach": "Niyoosha"}}],
+      "Wednesday": [{{"start": "17:30", "end": "18:30", "coach": "Yoga"}}],
+      "Thursday": [{{"start": "18:15", "end": "19:00", "coach": "SS"}}],
+      "Friday": [],
+      "Saturday": [{{"start": "13:45", "end": "15:00", "coach": "Kailee"}}],
+      "Sunday": []
+    }},
+    "Sharknado 3": {{
+      "Monday": [{{"start": "16:30", "end": "17:15", "coach": "Niyoosha"}}],
+      ...
+    }}
+  }}
+}}
+
+Important: 
+- Use 24-hour time format (e.g., 17:15 not 5:15 PM)
+- Empty array [] for days with no practice
+- Only include the classes I listed above
+- Return ONLY the JSON, no other text"""
+
+    # Call Anthropic API
+    response = requests.post(
+        "https://api.anthropic.com/v1/messages",
+        headers={
+            "Content-Type": "application/json",
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01"
         },
-        'Sharknado 3': {
-            'Monday': [('16:30', '17:15', 'Niyoosha')],
-            'Tuesday': [('18:30', '19:30', 'SS')],
-            'Wednesday': [('17:30', '18:30', 'Yoga')],
-            'Friday': [('18:15', '19:15', 'SS')]
-        }
-    }
+        json={
+            "model": "claude-sonnet-4-20250514",
+            "max_tokens": 2000,
+            "messages": [{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": media_type,
+                            "data": image_data
+                        }
+                    },
+                    {
+                        "type": "text",
+                        "text": prompt
+                    }
+                ]
+            }]
+        },
+        timeout=60
+    )
     
-    return schedules.get(class_name, {})
+    response.raise_for_status()
+    result = response.json()
+    
+    # Extract the text response
+    response_text = result['content'][0]['text']
+    
+    print("\nClaude's response:")
+    print(response_text[:500] + "..." if len(response_text) > 500 else response_text)
+    
+    # Parse JSON from response
+    # Remove markdown code blocks if present
+    json_text = response_text.strip()
+    if json_text.startswith('```'):
+        # Remove ```json and ``` markers
+        json_text = re.sub(r'^```json\s*', '', json_text)
+        json_text = re.sub(r'```\s*$', '', json_text)
+        json_text = json_text.strip()
+    
+    schedule_data = json.loads(json_text)
+    return schedule_data
+
+
+def parse_week_start(week_start_str):
+    """Parse week start date from string like '5/18/2026'"""
+    try:
+        return datetime.strptime(week_start_str, '%m/%d/%Y')
+    except ValueError:
+        # Fallback to current Monday
+        today = datetime.now()
+        return today - timedelta(days=today.weekday())
 
 
 def generate_ics_for_class(class_name, schedule, week_start, timezone):
     """Generate ICS calendar file for a single class"""
     
-    # Map day names to day offsets from Monday
     day_offset = {
         'Monday': 0,
         'Tuesday': 1,
@@ -159,10 +186,14 @@ def generate_ics_for_class(class_name, schedule, week_start, timezone):
         if not sessions:
             continue
             
-        day_date = week_start + timedelta(days=day_offset[day_name])
+        day_date = week_start + timedelta(days=day_offset.get(day_name, 0))
         
-        for start_time_str, end_time_str, location in sessions:
-            # Parse time strings
+        for session in sessions:
+            start_time_str = session['start']
+            end_time_str = session['end']
+            coach = session.get('coach', 'Practice')
+            
+            # Parse time strings (already in 24-hour format like "17:15")
             start_hour, start_min = map(int, start_time_str.split(':'))
             end_hour, end_min = map(int, end_time_str.split(':'))
             
@@ -181,7 +212,7 @@ def generate_ics_for_class(class_name, schedule, week_start, timezone):
                 f"DTSTAMP:{now}",
                 f"DTSTART;TZID={timezone}:{start_dt.strftime('%Y%m%dT%H%M%S')}",
                 f"DTEND;TZID={timezone}:{end_dt.strftime('%Y%m%dT%H%M%S')}",
-                f"SUMMARY:{class_name} - {location}",
+                f"SUMMARY:{class_name} - {coach}",
                 f"DESCRIPTION:Spartans Swim Team Practice - {class_name}",
                 "TRANSP:OPAQUE",
                 "END:VEVENT"
@@ -197,7 +228,7 @@ def generate_ics_for_class(class_name, schedule, week_start, timezone):
         "METHOD:PUBLISH",
         f"X-WR-CALNAME:Spartans - {class_name}",
         f"X-WR-TIMEZONE:{timezone}",
-        "X-PUBLISHED-TTL:P1W"  # Refresh weekly
+        "X-PUBLISHED-TTL:P1W"
     ]
     
     footer = ["END:VCALENDAR"]
@@ -213,6 +244,7 @@ def slugify(text):
 def main():
     print("=" * 60)
     print("Spartans Swim Schedule Calendar Generator")
+    print("Powered by Anthropic Claude API")
     print("=" * 60)
     
     # Load config
@@ -233,37 +265,16 @@ def main():
     response.raise_for_status()
     html_content = response.text
     
-    # Find schedule image
-    try:
-        image_url = find_schedule_image_url(html_content)
-        image = download_image(image_url)
-        
-        # Extract text via OCR
-        ocr_text = extract_text_from_image(image)
-        
-        # DEBUG: Print full OCR output
-        print("\n" + "=" * 60)
-        print("FULL OCR TEXT OUTPUT")
-        print("=" * 60)
-        print(ocr_text)
-        print("=" * 60)
-        print()
-        
-        # Try to parse week from OCR
-        week_start = parse_schedule_week(ocr_text)
-        if not week_start:
-            # Fallback: assume current week's Monday
-            today = datetime.now()
-            week_start = today - timedelta(days=today.weekday())
-            print(f"  Could not parse week from OCR, using current Monday: {week_start.strftime('%Y-%m-%d')}")
-        else:
-            print(f"  Schedule week starting: {week_start.strftime('%Y-%m-%d')}")
-        
-    except Exception as e:
-        print(f"ERROR: Could not process schedule image: {e}")
-        print("Falling back to manual schedule entry...")
-        today = datetime.now()
-        week_start = today - timedelta(days=today.weekday())
+    # Find and download schedule image
+    image_url = find_schedule_image_url(html_content)
+    image_data, media_type = download_image(image_url)
+    
+    # Extract schedule using Claude
+    schedule_data = extract_schedule_with_claude(image_data, media_type, classes)
+    
+    # Parse week start
+    week_start = parse_week_start(schedule_data['week_start'])
+    print(f"\nSchedule week starting: {week_start.strftime('%Y-%m-%d')}")
     
     # Generate ICS for each class
     os.makedirs('docs', exist_ok=True)
@@ -271,15 +282,14 @@ def main():
     for class_name in classes:
         print(f"\nGenerating calendar for: {class_name}")
         
-        # For MVP, use manual schedule (OCR parsing can be refined later)
-        schedule = manual_schedule_entry(class_name, week_start)
+        class_schedule = schedule_data['classes'].get(class_name, {})
         
-        if not any(schedule.values()):
+        if not class_schedule:
             print(f"  WARNING: No schedule found for {class_name}")
             continue
         
         # Generate ICS
-        ics_content = generate_ics_for_class(class_name, schedule, week_start, timezone)
+        ics_content = generate_ics_for_class(class_name, class_schedule, week_start, timezone)
         
         # Save to file
         filename = f"{slugify(class_name)}.ics"
@@ -287,7 +297,7 @@ def main():
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(ics_content)
         
-        event_count = sum(len(sessions) for sessions in schedule.values())
+        event_count = sum(len(sessions) for sessions in class_schedule.values())
         print(f"  Generated {filename} with {event_count} events")
     
     print("\n" + "=" * 60)
