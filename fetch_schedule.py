@@ -183,7 +183,7 @@ def parse_week_start(week_start_str):
 
 
 def generate_ics_for_class(class_name, schedule, week_start, timezone):
-    """Generate ICS calendar file for a single class"""
+    """Generate ICS calendar file for a single class with 2-week rolling history"""
     
     day_offset = {
         'Monday': 0,
@@ -196,6 +196,9 @@ def generate_ics_for_class(class_name, schedule, week_start, timezone):
     }
     
     events = []
+    
+    # Calculate cutoff date (keep events from last 14 days)
+    cutoff_date = week_start - timedelta(days=14)
     
     for day_name, sessions in schedule.items():
         if not sessions:
@@ -234,7 +237,7 @@ def generate_ics_for_class(class_name, schedule, week_start, timezone):
             ]
             events.append('\r\n'.join(event))
     
-    # Build complete ICS
+    # Build complete ICS with rolling history
     header = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",
@@ -249,6 +252,33 @@ def generate_ics_for_class(class_name, schedule, week_start, timezone):
     footer = ["END:VCALENDAR"]
     
     return '\r\n'.join(header + events + footer)
+
+
+def load_existing_events(filepath):
+    """Load events from existing ICS file"""
+    events_by_date = {}
+    
+    if not os.path.exists(filepath):
+        return events_by_date
+    
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Extract all VEVENT blocks
+        event_blocks = re.findall(r'BEGIN:VEVENT.*?END:VEVENT', content, re.DOTALL)
+        
+        for event_block in event_blocks:
+            # Extract DTSTART date
+            dtstart_match = re.search(r'DTSTART[^:]*:(\d{8})', event_block)
+            if dtstart_match:
+                date_str = dtstart_match.group(1)
+                events_by_date[date_str] = event_block.strip()
+    
+    except Exception as e:
+        print(f"  Warning: Could not load existing events: {e}")
+    
+    return events_by_date
 
 
 def slugify(text):
@@ -303,17 +333,56 @@ def main():
             print(f"  WARNING: No schedule found for {class_name}")
             continue
         
-        # Generate ICS
+        # Generate ICS for new week
         ics_content = generate_ics_for_class(class_name, class_schedule, week_start, timezone)
         
-        # Save to file
+        # Load existing events
         filename = f"{slugify(class_name)}.ics"
         filepath = os.path.join('docs', filename)
-        with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(ics_content)
+        existing_events = load_existing_events(filepath)
         
-        event_count = sum(len(sessions) for sessions in class_schedule.values())
-        print(f"  Generated {filename} with {event_count} events")
+        # Calculate cutoff (keep events from last 14 days)
+        cutoff_date = week_start - timedelta(days=14)
+        cutoff_str = cutoff_date.strftime('%Y%m%d')
+        
+        # Parse existing events and filter to keep only recent ones
+        lines = ics_content.split('\r\n')
+        header_lines = []
+        event_lines = []
+        in_event = False
+        current_event = []
+        
+        for line in lines:
+            if line.startswith('BEGIN:VEVENT'):
+                in_event = True
+                current_event = [line]
+            elif line.startswith('END:VEVENT'):
+                current_event.append(line)
+                event_lines.append('\r\n'.join(current_event))
+                in_event = False
+                current_event = []
+            elif in_event:
+                current_event.append(line)
+            elif not in_event and not line.startswith('END:VCALENDAR'):
+                header_lines.append(line)
+        
+        # Add existing events that are still within the window
+        for date_str, event_block in existing_events.items():
+            if date_str >= cutoff_str:  # Keep if after cutoff date
+                # Check if this event is already in new events
+                if event_block not in event_lines:
+                    event_lines.append(event_block)
+        
+        # Rebuild ICS with all events (old within window + new)
+        footer = ["END:VCALENDAR"]
+        merged_ics = '\r\n'.join(header_lines + event_lines + footer)
+        
+        # Save to file
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(merged_ics)
+        
+        event_count = len(event_lines)
+        print(f"  Generated {filename} with {event_count} events (including 2-week history)")
     
     print("\n" + "=" * 60)
     print("Done! ✅")
