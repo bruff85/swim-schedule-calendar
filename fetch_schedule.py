@@ -72,15 +72,22 @@ def extract_schedule_with_claude(image_data, media_type, classes):
     classes_list = ', '.join(classes)
     prompt = f"""Please analyze this swim practice schedule image and extract the practice times for these specific classes: {classes_list}
 
+CRITICAL: This schedule MUST be released on or after today (Sunday evening). If the schedule date appears to be from the PAST week, REJECT IT and respond with: {{"error": "Schedule is from previous week"}}
+
 For each class, I need:
-- The week date range (e.g., "5/18 - 5/24")
+- The week date range (e.g., "5/18 - 5/24") — MUST BE THIS WEEK OR NEXT WEEK, NOT PAST
 - For each day of the week (Monday through Sunday), list all practice sessions with:
-  - Start time
-  - End time  
+  - Start time (ALWAYS afternoon/evening, 14:00 or later in 24-hour format)
+  - End time
   - Coach/Location name (the text in each cell like "Niyoosha", "SS", "Yoga", "Kailee", etc.)
   - If a day shows "OFF", skip it (no practice that day)
 
-Please respond with ONLY valid JSON in this exact format:
+IMPORTANT CONSTRAINTS:
+- Swim practice times are NEVER before 2 PM (14:00)
+- If you see "AM" times or times before 14:00, REJECT THE ENTIRE SCHEDULE and respond with: {{"error": "Schedule contains invalid AM times"}}
+- Use 24-hour format ONLY (14:30 for 2:30 PM, never "2:30 AM")
+
+Please respond with ONLY valid JSON in this exact format (unless there's an error):
 
 {{
   "week_start": "5/18/2026",
@@ -101,11 +108,7 @@ Please respond with ONLY valid JSON in this exact format:
   }}
 }}
 
-Important: 
-- Use 24-hour time format (e.g., 17:15 not 5:15 PM)
-- Empty array [] for days with no practice
-- Only include the classes I listed above
-- Return ONLY the JSON, no other text"""
+Return ONLY the JSON, no other text"""
 
     # Call Anthropic API
     try:
@@ -169,17 +172,35 @@ Important:
         json_text = json_text.strip()
     
     schedule_data = json.loads(json_text)
+    
+    # Check for error responses from Claude
+    if 'error' in schedule_data:
+        raise ValueError(f"Claude validation error: {schedule_data['error']}")
+    
     return schedule_data
 
 
 def parse_week_start(week_start_str):
     """Parse week start date from string like '5/18/2026'"""
     try:
-        return datetime.strptime(week_start_str, '%m/%d/%Y')
+        parsed_date = datetime.strptime(week_start_str, '%m/%d/%Y')
     except ValueError:
         # Fallback to current Monday
         today = datetime.now()
         return today - timedelta(days=today.weekday())
+    
+    # VALIDATION: Check that schedule is current/future (not more than 1 day in the past)
+    today = datetime.now()
+    days_difference = (today - parsed_date).days
+    
+    if days_difference > 1:
+        raise ValueError(
+            f"Schedule date is stale! Extracted: {parsed_date.strftime('%m/%d/%Y')}, "
+            f"Today: {today.strftime('%m/%d/%Y')}. "
+            f"This schedule is {days_difference} days old. Aborting to prevent old data."
+        )
+    
+    return parsed_date
 
 
 def generate_ics_for_class(class_name, schedule, week_start, timezone):
@@ -214,6 +235,13 @@ def generate_ics_for_class(class_name, schedule, week_start, timezone):
             # Parse time strings (already in 24-hour format like "17:15")
             start_hour, start_min = map(int, start_time_str.split(':'))
             end_hour, end_min = map(int, end_time_str.split(':'))
+            
+            # VALIDATION: Swim practice should NEVER be before 2 PM (14:00)
+            # Reject if start time is in early morning/AM
+            if start_hour < 14:
+                print(f"  WARNING: Rejecting unrealistic practice time {start_time_str} for {coach} on {day_name}")
+                print(f"    Swim practice times should be PM (14:00 or later, 24-hour format)")
+                continue
             
             start_dt = day_date.replace(hour=start_hour, minute=start_min, second=0)
             end_dt = day_date.replace(hour=end_hour, minute=end_min, second=0)
