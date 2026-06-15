@@ -181,7 +181,7 @@ Return ONLY the JSON, no other text"""
 
 
 def parse_week_start(week_start_str):
-    """Parse week start date from string like '5/18/2026'"""
+    """Parse week start date from string like '6/15/2026' or '6/15/2024' (OCR error)"""
     try:
         parsed_date = datetime.strptime(week_start_str, '%m/%d/%Y')
     except ValueError:
@@ -189,13 +189,26 @@ def parse_week_start(week_start_str):
         today = datetime.now()
         return today - timedelta(days=today.weekday())
     
-    # VALIDATION: Check that schedule is current/future (not more than 1 day in the past)
     today = datetime.now()
-    days_difference = (today - parsed_date).days
     
-    if days_difference > 1:
+    # VALIDATION: If year is wrong by 1-2 years, assume it's an OCR error and correct it
+    if parsed_date.year != today.year:
+        if abs(parsed_date.year - today.year) <= 2:
+            # Likely OCR error, correct the year
+            original_date = parsed_date
+            parsed_date = parsed_date.replace(year=today.year)
+            print(f"  Year corrected from {original_date.strftime('%m/%d/%Y')} to {parsed_date.strftime('%m/%d/%Y')} (likely OCR error)")
+        else:
+            raise ValueError(
+                f"Year seems way off: Extracted {parsed_date.year} but today is {today.year}. "
+                f"This is likely an image reading error."
+            )
+    
+    # Check that date is current/recent (not more than 7 days in past)
+    days_difference = (today - parsed_date).days
+    if days_difference > 7:
         raise ValueError(
-            f"Schedule date is stale! Extracted: {parsed_date.strftime('%m/%d/%Y')}, "
+            f"Schedule date is too old! Extracted: {parsed_date.strftime('%m/%d/%Y')}, "
             f"Today: {today.strftime('%m/%d/%Y')}. "
             f"This schedule is {days_difference} days old. Aborting to prevent old data."
         )
