@@ -16,6 +16,19 @@ from io import BytesIO
 import requests
 
 
+# Pool location mappings
+LOCATIONS = {
+    "LCHS": {
+        "name": "La Canada High School",
+        "address": "4463 Oak Grove Dr, La Cañada Flintridge, CA 91011"
+    },
+    "GHS": {
+        "name": "Glendale High School",
+        "address": "1440 E Broadway, Glendale, CA 91205"
+    }
+}
+
+
 def load_config():
     """Load configuration from config.json"""
     with open('config.json', 'r') as f:
@@ -79,13 +92,15 @@ For each class, I need:
 - For each day of the week (Monday through Sunday), list all practice sessions with:
   - Start time (ALWAYS afternoon/evening, 14:00 or later in 24-hour format)
   - End time
-  - Coach/Location name (the text in each cell like "Niyoosha", "SS", "Yoga", "Kailee", etc.)
+  - Coach name (the text in each cell like "Niyoosha", "SS", "Yoga", "Kailee", etc.)
+  - Location: Check if the cell contains "@GHS" or "GHS" text. If yes, set location to "GHS". Otherwise set to "LCHS" (default)
   - If a day shows "OFF", skip it (no practice that day)
 
 IMPORTANT CONSTRAINTS:
 - Swim practice times are NEVER before 2 PM (14:00)
 - If you see "AM" times or times before 14:00, REJECT THE ENTIRE SCHEDULE and respond with: {{"error": "Schedule contains invalid AM times"}}
 - Use 24-hour format ONLY (14:30 for 2:30 PM, never "2:30 AM")
+- Location must be either "GHS" or "LCHS" (normalize to these codes)
 
 Please respond with ONLY valid JSON in this exact format (unless there's an error):
 
@@ -93,16 +108,16 @@ Please respond with ONLY valid JSON in this exact format (unless there's an erro
   "week_start": "5/18/2026",
   "classes": {{
     "Sharknado 2": {{
-      "Monday": [{{"start": "17:15", "end": "18:00", "coach": "Niyoosha"}}],
-      "Tuesday": [{{"start": "16:30", "end": "17:30", "coach": "Niyoosha"}}],
-      "Wednesday": [{{"start": "17:30", "end": "18:30", "coach": "Yoga"}}],
-      "Thursday": [{{"start": "18:15", "end": "19:00", "coach": "SS"}}],
+      "Monday": [{{"start": "17:15", "end": "18:00", "coach": "Niyoosha", "location": "LCHS"}}],
+      "Tuesday": [{{"start": "16:30", "end": "17:30", "coach": "Niyoosha", "location": "LCHS"}}],
+      "Wednesday": [{{"start": "17:30", "end": "18:30", "coach": "Yoga", "location": "GHS"}}],
+      "Thursday": [{{"start": "18:15", "end": "19:00", "coach": "SS", "location": "LCHS"}}],
       "Friday": [],
-      "Saturday": [{{"start": "13:45", "end": "15:00", "coach": "Kailee"}}],
+      "Saturday": [{{"start": "13:45", "end": "15:00", "coach": "Kailee", "location": "LCHS"}}],
       "Sunday": []
     }},
     "Sharknado 3": {{
-      "Monday": [{{"start": "16:30", "end": "17:15", "coach": "Niyoosha"}}],
+      "Monday": [{{"start": "16:30", "end": "17:15", "coach": "Niyoosha", "location": "LCHS"}}],
       ...
     }}
   }}
@@ -244,6 +259,7 @@ def generate_ics_for_class(class_name, schedule, week_start, timezone):
             start_time_str = session['start']
             end_time_str = session['end']
             coach = session.get('coach', 'Practice')
+            location_code = session.get('location', 'LCHS')  # Default to LCHS
             
             # Parse time strings (already in 24-hour format like "17:15")
             start_hour, start_min = map(int, start_time_str.split(':'))
@@ -259,6 +275,11 @@ def generate_ics_for_class(class_name, schedule, week_start, timezone):
             start_dt = day_date.replace(hour=start_hour, minute=start_min, second=0)
             end_dt = day_date.replace(hour=end_hour, minute=end_min, second=0)
             
+            # Get location info
+            location_info = LOCATIONS.get(location_code, LOCATIONS['LCHS'])
+            location_name = location_info['name']
+            location_address = location_info['address']
+            
             # Generate UID
             uid = str(uuid.uuid5(uuid.NAMESPACE_DNS, 
                                  f"swim-{class_name}-{day_date.isoformat()}-{start_time_str}"))
@@ -273,6 +294,7 @@ def generate_ics_for_class(class_name, schedule, week_start, timezone):
                 f"DTEND;TZID={timezone}:{end_dt.strftime('%Y%m%dT%H%M%S')}",
                 f"SUMMARY:{class_name} - {coach}",
                 f"DESCRIPTION:Spartans Swim Team Practice - {class_name}",
+                f"LOCATION:{location_address}",
                 "TRANSP:OPAQUE",
                 "END:VEVENT"
             ]
