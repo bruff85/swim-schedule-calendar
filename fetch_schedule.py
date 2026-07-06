@@ -28,11 +28,49 @@ LOCATIONS = {
     }
 }
 
+# State file used to track which week we've already generated calendars for.
+# This is what prevents a manual run + the scheduled overnight run from
+# both processing the same week and creating duplicate events.
+STATE_FILE = os.path.join('docs', '.last_processed_week.json')
+
 
 def load_config():
     """Load configuration from config.json"""
     with open('config.json', 'r') as f:
         return json.load(f)
+
+
+def save_last_processed_week(week_key):
+    """Record that we've successfully processed this week (for logging/debugging only —
+    the actual skip decision is based on real ICS content, see week_has_events_for_class)."""
+    os.makedirs('docs', exist_ok=True)
+    with open(STATE_FILE, 'w') as f:
+        json.dump({
+            'week_start': week_key,
+            'updated_at': datetime.utcnow().isoformat() + 'Z'
+        }, f, indent=2)
+
+
+def week_has_events_for_class(filepath, week_start):
+    """Check the ACTUAL committed ICS file to see if it already contains at least one
+    event whose DTSTART falls within this week (Monday..Sunday).
+
+    This is deliberately based on the real calendar content rather than a separate
+    'last run' record, so it can't drift out of sync with what's actually published,
+    and it reuses the exact same DTSTART date strings the rolling-window trim uses.
+    """
+    if not os.path.exists(filepath):
+        return False
+    
+    with open(filepath, 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    week_end = week_start + timedelta(days=6)
+    start_str = week_start.strftime('%Y%m%d')
+    end_str = week_end.strftime('%Y%m%d')
+    
+    dtstarts = re.findall(r'DTSTART[^:]*:(\d{8})', content)
+    return any(start_str <= d <= end_str for d in dtstarts)
 
 
 def find_schedule_image_url(html_content):
@@ -317,12 +355,18 @@ def generate_ics_for_class(class_name, schedule, week_start, timezone):
     return '\r\n'.join(header + events + footer)
 
 
+def extract_uid(event_block):
+    """Pull the UID line out of a VEVENT block"""
+    match = re.search(r'UID:([^\r\n]+)', event_block)
+    return match.group(1) if match else None
+
+
 def load_existing_events(filepath):
-    """Load events from existing ICS file"""
-    events_by_date = {}
+    """Load events from existing ICS file, keyed by UID (falls back to DTSTART if no UID)"""
+    events_by_uid = {}
     
     if not os.path.exists(filepath):
-        return events_by_date
+        return events_by_uid
     
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
@@ -332,16 +376,14 @@ def load_existing_events(filepath):
         event_blocks = re.findall(r'BEGIN:VEVENT.*?END:VEVENT', content, re.DOTALL)
         
         for event_block in event_blocks:
-            # Extract DTSTART date
-            dtstart_match = re.search(r'DTSTART[^:]*:(\d{8})', event_block)
-            if dtstart_match:
-                date_str = dtstart_match.group(1)
-                events_by_date[date_str] = event_block.strip()
+            uid = extract_uid(event_block)
+            key = uid if uid else event_block  # fallback so we never silently drop an event
+            events_by_uid[key] = event_block.strip()
     
     except Exception as e:
         print(f"  Warning: Could not load existing events: {e}")
     
-    return events_by_date
+    return events_by_uid
 
 
 def slugify(text):
@@ -382,7 +424,34 @@ def main():
     
     # Parse week start
     week_start = parse_week_start(schedule_data['week_start'])
-    print(f"\nSchedule week starting: {week_start.strftime('%Y-%m-%d')}")
+    week_key = week_start.strftime('%Y-%m-%d')
+    print(f"\nSchedule week starting: {week_key}")
+    
+    # --- Duplicate-run guard ---
+    # If this week's events are already present in every tracked class's ICS file
+    # (e.g. you ran the workflow manually earlier and the scheduled Sunday-night
+    # run is now firing too), skip regeneration entirely so we don't waste an API
+    # call or touch the files. This checks the REAL committed calendar content
+    # (not a separate log file), so it can't get out of sync with what's actually
+    # published, and it can't misjudge the rolling window since it's reading the
+    # same DTSTART dates the window trim itself uses.
+    force = os.environ.get('FORCE_REGENERATE', '').strip().lower() == 'true'
+    
+    if not force:
+        already_processed = all(
+            week_has_events_for_class(os.path.join('docs', f"{slugify(c)}.ics"), week_start)
+            for c in classes
+        )
+        if already_processed:
+            print(f"\nWeek {week_key} already has events in every tracked class's calendar.")
+            print("Skipping regeneration to avoid duplicate events / an unnecessary API call.")
+            print("To force it anyway (e.g. to correct a bad prior run), set FORCE_REGENERATE=true.")
+            print("\n" + "=" * 60)
+            print("Skipped (no changes made) ✅")
+            print("=" * 60)
+            return
+    else:
+        print("\nFORCE_REGENERATE=true — regenerating even though this week may already be processed.")
     
     # Generate ICS for each class
     os.makedirs('docs', exist_ok=True)
@@ -399,19 +468,22 @@ def main():
         # Generate ICS for new week
         ics_content = generate_ics_for_class(class_name, class_schedule, week_start, timezone)
         
-        # Load existing events
+        # Load existing events (keyed by UID)
         filename = f"{slugify(class_name)}.ics"
         filepath = os.path.join('docs', filename)
-        existing_events = load_existing_events(filepath)
+        existing_events_by_uid = load_existing_events(filepath)
         
         # Calculate cutoff (keep events from last 14 days)
         cutoff_date = week_start - timedelta(days=14)
         cutoff_str = cutoff_date.strftime('%Y%m%d')
         
-        # Parse existing events and filter to keep only recent ones
+        # Parse newly generated events into a dict keyed by UID.
+        # New events always take precedence over old ones with the same UID
+        # (this is what prevents duplicates when a manual run and the
+        # scheduled run both generate the same week's events).
         lines = ics_content.split('\r\n')
         header_lines = []
-        event_lines = []
+        merged_by_uid = {}
         in_event = False
         current_event = []
         
@@ -421,31 +493,38 @@ def main():
                 current_event = [line]
             elif line.startswith('END:VEVENT'):
                 current_event.append(line)
-                event_lines.append('\r\n'.join(current_event))
+                block = '\r\n'.join(current_event)
+                uid = extract_uid(block)
+                merged_by_uid[uid if uid else block] = block
                 in_event = False
                 current_event = []
             elif in_event:
                 current_event.append(line)
-            elif not in_event and not line.startswith('END:VCALENDAR'):
+            elif not line.startswith('END:VCALENDAR'):
                 header_lines.append(line)
         
-        # Add existing events that are still within the window
-        for date_str, event_block in existing_events.items():
-            if date_str >= cutoff_str:  # Keep if after cutoff date
-                # Check if this event is already in new events
-                if event_block not in event_lines:
-                    event_lines.append(event_block)
+        # Add existing events that are still within the window and not
+        # already superseded by a freshly generated event with the same UID.
+        for uid, event_block in existing_events_by_uid.items():
+            dtstart_match = re.search(r'DTSTART[^:]*:(\d{8})', event_block)
+            date_str = dtstart_match.group(1) if dtstart_match else None
+            if date_str and date_str >= cutoff_str:
+                if uid not in merged_by_uid:
+                    merged_by_uid[uid] = event_block
         
-        # Rebuild ICS with all events (old within window + new)
+        # Rebuild ICS with all events (old within window + new, deduped by UID)
         footer = ["END:VCALENDAR"]
-        merged_ics = '\r\n'.join(header_lines + event_lines + footer)
+        merged_ics = '\r\n'.join(header_lines + list(merged_by_uid.values()) + footer)
         
         # Save to file
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(merged_ics)
         
-        event_count = len(event_lines)
+        event_count = len(merged_by_uid)
         print(f"  Generated {filename} with {event_count} events (including 2-week history)")
+    
+    # Record that this week has been processed so a later duplicate run can skip it
+    save_last_processed_week(week_key)
     
     print("\n" + "=" * 60)
     print("Done! ✅")
