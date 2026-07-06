@@ -107,6 +107,29 @@ def download_image(url):
     return image_data, media_type
 
 
+def extract_json_from_text(response_text):
+    """Pull a JSON object out of Claude's response, tolerating stray commentary or
+    markdown fences before/after it (rather than assuming the response is pure JSON).
+    """
+    text = response_text.strip()
+    
+    # First choice: a fenced ```json ... ``` or ``` ... ``` block, wherever it appears
+    fence_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', text, re.DOTALL)
+    if fence_match:
+        return fence_match.group(1)
+    
+    # Second choice: the outermost { ... } in the whole response
+    first_brace = text.find('{')
+    last_brace = text.rfind('}')
+    if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+        return text[first_brace:last_brace + 1]
+    
+    raise ValueError(
+        f"Could not find any JSON in Claude's response. Raw response started with:\n"
+        f"{text[:500]}"
+    )
+
+
 def extract_schedule_with_claude(image_data, media_type, classes):
     """Use Anthropic API to extract schedule from image"""
     print("Sending image to Claude for schedule extraction...")
@@ -140,7 +163,9 @@ IMPORTANT CONSTRAINTS:
 - Use 24-hour format ONLY (14:30 for 2:30 PM, never "2:30 AM")
 - Location must be either "GHS" or "LCHS" (normalize to these codes)
 
-Please respond with ONLY valid JSON in this exact format (unless there's an error):
+Your ENTIRE response must be nothing but the JSON object itself — no preamble, no commentary, no explanation of what week it is, no markdown code fences. Do not write a sentence before the JSON. The very first character of your response must be {{ and the very last character must be }}.
+
+Respond with ONLY valid JSON in this exact format (unless there's an error):
 
 {{
   "week_start": "5/18/2026",
@@ -215,15 +240,10 @@ Return ONLY the JSON, no other text"""
     print("\nClaude's response:")
     print(response_text[:500] + "..." if len(response_text) > 500 else response_text)
     
-    # Parse JSON from response
-    # Remove markdown code blocks if present
-    json_text = response_text.strip()
-    if json_text.startswith('```'):
-        # Remove ```json and ``` markers
-        json_text = re.sub(r'^```json\s*', '', json_text)
-        json_text = re.sub(r'```\s*$', '', json_text)
-        json_text = json_text.strip()
-    
+    # Parse JSON from response. Claude is instructed to return ONLY JSON, but models
+    # sometimes add a sentence of commentary before it anyway — so we look for the
+    # JSON wherever it appears rather than assuming it's the very first character.
+    json_text = extract_json_from_text(response_text)
     schedule_data = json.loads(json_text)
     
     # Check for error responses from Claude
