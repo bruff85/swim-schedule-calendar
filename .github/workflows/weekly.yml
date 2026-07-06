@@ -6,6 +6,12 @@ on:
     - cron: '0 7 * * 1'
   
   workflow_dispatch:  # Allow manual triggering
+    inputs:
+      force_regenerate:
+        description: 'Force regenerate this week even if already processed (use to fix a bad prior run)'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   update-schedule:
@@ -28,12 +34,15 @@ jobs:
       - name: Run schedule fetcher
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Only manual runs (workflow_dispatch) have this input; scheduled runs
+          # fall back to 'false' automatically since the input won't exist.
+          FORCE_REGENERATE: ${{ github.event.inputs.force_regenerate || 'false' }}
         run: python fetch_schedule.py
       
       - name: Commit and push updated files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/*.ics
+          git add docs/*.ics docs/.last_processed_week.json
           git diff --staged --quiet || git commit -m "Update swim schedule for week of $(date +'%Y-%m-%d')"
           git push
