@@ -198,8 +198,9 @@ Return ONLY the JSON, no other text"""
                 "anthropic-version": "2023-06-01"
             },
             json={
-                "model": "claude-opus-4-1",
+                "model": "claude-opus-5",
                 "max_tokens": 2000,
+                "thinking": {"type": "disabled"},
                 "messages": [{
                     "role": "user",
                     "content": [
