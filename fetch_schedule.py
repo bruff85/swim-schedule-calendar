@@ -28,6 +28,10 @@ LOCATIONS = {
     }
 }
 
+# Public practice-schedule page linked from every event's Notes/DESCRIPTION
+SCHEDULE_PAGE_URL = ("https://www.gomotionapp.com/team/spartansla/"
+                     "page/our-team/practice-schedule-and-monthly-fees")
+
 # State file used to track which week we've already generated calendars for.
 # This is what prevents a manual run + the scheduled overnight run from
 # both processing the same week and creating duplicate events.
@@ -290,6 +294,26 @@ def parse_week_start(week_start_str):
     return parsed_date
 
 
+def ics_escape(text):
+    """Escape text for use as an ICS property value (RFC 5545)."""
+    return (text.replace("\\", "\\\\")   # backslash FIRST, or it double-escapes
+                .replace(";", "\\;")
+                .replace(",", "\\,")
+                .replace("\n", "\\n"))
+
+
+def build_practice_description():
+    """Build the Notes/DESCRIPTION text: a link to the practice schedule page
+    plus a weekly-change disclaimer. Same for every event, so no details needed."""
+    parts = [
+        "Full practice schedule (times, locations & weekly changes):",
+        SCHEDULE_PAGE_URL,
+        "",
+        "Schedule changes weekly; confirm with your coach.",
+    ]
+    return ics_escape("\n".join(parts))
+
+
 def generate_ics_for_class(class_name, schedule, week_start, timezone):
     """Generate ICS calendar file for a single class with 2-week rolling history"""
     
@@ -352,9 +376,9 @@ def generate_ics_for_class(class_name, schedule, week_start, timezone):
                 f"DTSTART;TZID={timezone}:{start_dt.strftime('%Y%m%dT%H%M%S')}",
                 f"DTEND;TZID={timezone}:{end_dt.strftime('%Y%m%dT%H%M%S')}",
                 f"SUMMARY:{class_name} - {coach}",
-                f"DESCRIPTION:Spartans Swim Team Practice - {class_name}",
-                f"LOCATION:{location_address}",
-                "TRANSP:OPAQUE",
+                f"DESCRIPTION:{build_practice_description()}",
+                f"LOCATION:{ics_escape(location_address)}",
+                "TRANSP:TRANSPARENT",
                 "END:VEVENT"
             ]
             events.append('\r\n'.join(event))
