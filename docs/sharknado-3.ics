@@ -7,6 +7,36 @@ X-WR-CALNAME:Spartans - Sharknado 3
 X-WR-TIMEZONE:America/Los_Angeles
 X-PUBLISHED-TTL:P1W
 BEGIN:VEVENT
+UID:3a011c88-1d34-583f-8124-f8a79659d3d9
+DTSTAMP:20260817T053815Z
+DTSTART;TZID=America/Los_Angeles:20260817T173000
+DTEND;TZID=America/Los_Angeles:20260817T183000
+SUMMARY:Sharknado 3 - Niyoosha
+DESCRIPTION:Full practice schedule (times\, locations & weekly changes):\nhttps://www.gomotionapp.com/team/spartansla/page/our-team/practice-schedule-and-monthly-fees\n\nSchedule changes weekly\; confirm with your coach.
+LOCATION:4463 Oak Grove Dr\, La Cañada Flintridge\, CA 91011
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:d435933c-69d9-53f1-8a91-7133d770005c
+DTSTAMP:20260817T053815Z
+DTSTART;TZID=America/Los_Angeles:20260819T183000
+DTEND;TZID=America/Los_Angeles:20260819T193000
+SUMMARY:Sharknado 3 - SS
+DESCRIPTION:Full practice schedule (times\, locations & weekly changes):\nhttps://www.gomotionapp.com/team/spartansla/page/our-team/practice-schedule-and-monthly-fees\n\nSchedule changes weekly\; confirm with your coach.
+LOCATION:4463 Oak Grove Dr\, La Cañada Flintridge\, CA 91011
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:7a911827-36d2-50a5-8307-93b3d6080e85
+DTSTAMP:20260817T053815Z
+DTSTART;TZID=America/Los_Angeles:20260821T181500
+DTEND;TZID=America/Los_Angeles:20260821T191500
+SUMMARY:Sharknado 3 - SS
+DESCRIPTION:Full practice schedule (times\, locations & weekly changes):\nhttps://www.gomotionapp.com/team/spartansla/page/our-team/practice-schedule-and-monthly-fees\n\nSchedule changes weekly\; confirm with your coach.
+LOCATION:4463 Oak Grove Dr\, La Cañada Flintridge\, CA 91011
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
 UID:dfa05e7f-4650-556d-8100-a6b8e83d5ea5
 DTSTAMP:20260812T233257Z
 DTSTART;TZID=America/Los_Angeles:20260810T173000
@@ -62,36 +92,6 @@ DTSTAMP:20260803T104244Z
 DTSTART;TZID=America/Los_Angeles:20260807T181500
 DTEND;TZID=America/Los_Angeles:20260807T191500
 SUMMARY:Sharknado 3 - SS
-DESCRIPTION:Spartans Swim Team Practice - Sharknado 3
-LOCATION:4463 Oak Grove Dr, La Cañada Flintridge, CA 91011
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
-UID:36a213ca-aa8d-5718-867c-09158ea90f39
-DTSTAMP:20260727T104305Z
-DTSTART;TZID=America/Los_Angeles:20260727T173000
-DTEND;TZID=America/Los_Angeles:20260727T183000
-SUMMARY:Sharknado 3 - Niyoosha
-DESCRIPTION:Spartans Swim Team Practice - Sharknado 3
-LOCATION:4463 Oak Grove Dr, La Cañada Flintridge, CA 91011
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
-UID:902687a3-d0cc-5db5-971f-523a8889e8db
-DTSTAMP:20260727T104305Z
-DTSTART;TZID=America/Los_Angeles:20260729T183000
-DTEND;TZID=America/Los_Angeles:20260729T193000
-SUMMARY:Sharknado 3 - SS
-DESCRIPTION:Spartans Swim Team Practice - Sharknado 3
-LOCATION:4463 Oak Grove Dr, La Cañada Flintridge, CA 91011
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
-UID:a6815428-b1a7-5694-9293-a505309c9944
-DTSTAMP:20260727T104305Z
-DTSTART;TZID=America/Los_Angeles:20260731T181500
-DTEND;TZID=America/Los_Angeles:20260731T191500
-SUMMARY:Sharknado 3 - Nat
 DESCRIPTION:Spartans Swim Team Practice - Sharknado 3
 LOCATION:4463 Oak Grove Dr, La Cañada Flintridge, CA 91011
 TRANSP:OPAQUE
