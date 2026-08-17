@@ -155,16 +155,18 @@ CRITICAL: This schedule MUST be released on or after today (Sunday evening). If 
 For each class, I need:
 - The week date range (e.g., "5/18 - 5/24") — MUST BE THIS WEEK OR NEXT WEEK, NOT PAST
 - For each day of the week (Monday through Sunday), list all practice sessions with:
-  - Start time (ALWAYS afternoon/evening, 14:00 or later in 24-hour format)
+  - Start time in 24-hour format (see TIME RULES below)
   - End time
   - Coach name (the text in each cell like "Niyoosha", "SS", "Yoga", "Kailee", etc.)
   - Location: Check if the cell contains "@GHS" or "GHS" text. If yes, set location to "GHS". Otherwise set to "LCHS" (default)
   - If a day shows "OFF", skip it (no practice that day)
 
-IMPORTANT CONSTRAINTS:
-- Swim practice times are NEVER before 2 PM (14:00)
-- If you see "AM" times or times before 14:00, REJECT THE ENTIRE SCHEDULE and respond with: {{"error": "Schedule contains invalid AM times"}}
-- Use 24-hour format ONLY (14:30 for 2:30 PM, never "2:30 AM")
+IMPORTANT TIME RULES:
+- Times written without AM/PM are afternoon/evening — convert to 24-hour PM (e.g. "4:30-6:00" means 16:30-18:00, "1:45-3:00" means 13:45-15:00)
+- Monday-Friday practices for these classes ALWAYS start at 2 PM (14:00) or later. A weekday time before 14:00 is not a practice for these classes — skip it.
+- Saturday and Sunday practices may be in the morning (e.g. "7:50-10:00AM" means 07:50-10:00), but never run later than 8 PM (20:00).
+- The schedule occasionally has AM/PM typos: a weekend time marked "PM" that would start after 8 PM (e.g. "9:30-11:30PM") is really a morning practice — extract it as AM (09:30-11:30).
+- Use 24-hour format ONLY (14:30 for 2:30 PM)
 - Location must be either "GHS" or "LCHS" (normalize to these codes)
 
 Your ENTIRE response must be nothing but the JSON object itself — no preamble, no commentary, no explanation of what week it is, no markdown code fences. Do not write a sentence before the JSON. The very first character of your response must be {{ and the very last character must be }}.
@@ -348,11 +350,14 @@ def generate_ics_for_class(class_name, schedule, week_start, timezone):
             start_hour, start_min = map(int, start_time_str.split(':'))
             end_hour, end_min = map(int, end_time_str.split(':'))
             
-            # VALIDATION: Swim practice should NEVER be before 2 PM (14:00)
-            # Reject if start time is in early morning/AM
-            if start_hour < 14:
-                print(f"  WARNING: Rejecting unrealistic practice time {start_time_str} for {coach} on {day_name}")
-                print(f"    Swim practice times should be PM (14:00 or later, 24-hour format)")
+            # VALIDATION: weekday practices always start 2 PM or later; weekend
+            # practices may be in the morning (6 AM floor as a sanity check) but
+            # never run at/after 8 PM. Guards against AM/PM misreads and typos.
+            is_weekend = day_name in ('Saturday', 'Sunday')
+            time_ok = (6 <= start_hour < 20) if is_weekend else (start_hour >= 14)
+            if not time_ok:
+                print(f"  WARNING: Rejecting implausible practice time {start_time_str} for {coach} on {day_name}")
+                print(f"    (Mon-Fri practices start 14:00 or later; Sat/Sun between 06:00 and 20:00)")
                 continue
             
             start_dt = day_date.replace(hour=start_hour, minute=start_min, second=0)
