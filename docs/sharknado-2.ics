@@ -7,6 +7,46 @@ X-WR-CALNAME:Spartans - Sharknado 2
 X-WR-TIMEZONE:America/Los_Angeles
 X-PUBLISHED-TTL:P1W
 BEGIN:VEVENT
+UID:5a01f38e-29b4-5be5-9d9a-44100a9a3b82
+DTSTAMP:20260831T145255Z
+DTSTART;TZID=America/Los_Angeles:20260901T163000
+DTEND;TZID=America/Los_Angeles:20260901T173000
+SUMMARY:Sharknado 2 - Niyoosha
+DESCRIPTION:Full practice schedule (times\, locations & weekly changes):\nhttps://www.gomotionapp.com/team/spartansla/page/our-team/practice-schedule-and-monthly-fees\n\nSchedule changes weekly\; confirm with your coach.
+LOCATION:4463 Oak Grove Dr\, La Cañada Flintridge\, CA 91011
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:02963a4c-eefa-5398-9fea-03369581794f
+DTSTAMP:20260831T145255Z
+DTSTART;TZID=America/Los_Angeles:20260902T163000
+DTEND;TZID=America/Los_Angeles:20260902T173000
+SUMMARY:Sharknado 2 - Yoga
+DESCRIPTION:Full practice schedule (times\, locations & weekly changes):\nhttps://www.gomotionapp.com/team/spartansla/page/our-team/practice-schedule-and-monthly-fees\n\nSchedule changes weekly\; confirm with your coach.
+LOCATION:4463 Oak Grove Dr\, La Cañada Flintridge\, CA 91011
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:7826e10a-541f-5625-af9f-b7576197ee17
+DTSTAMP:20260831T145255Z
+DTSTART;TZID=America/Los_Angeles:20260903T183000
+DTEND;TZID=America/Los_Angeles:20260903T193000
+SUMMARY:Sharknado 2 - SS
+DESCRIPTION:Full practice schedule (times\, locations & weekly changes):\nhttps://www.gomotionapp.com/team/spartansla/page/our-team/practice-schedule-and-monthly-fees\n\nSchedule changes weekly\; confirm with your coach.
+LOCATION:4463 Oak Grove Dr\, La Cañada Flintridge\, CA 91011
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:91fca10f-0738-567d-b825-add13544072a
+DTSTAMP:20260831T145255Z
+DTSTART;TZID=America/Los_Angeles:20260906T103000
+DTEND;TZID=America/Los_Angeles:20260906T111500
+SUMMARY:Sharknado 2 - DH
+DESCRIPTION:Full practice schedule (times\, locations & weekly changes):\nhttps://www.gomotionapp.com/team/spartansla/page/our-team/practice-schedule-and-monthly-fees\n\nSchedule changes weekly\; confirm with your coach.
+LOCATION:4463 Oak Grove Dr\, La Cañada Flintridge\, CA 91011
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
 UID:14759f3c-c4bc-5206-9618-52559e64bbf0
 DTSTAMP:20260824T075732Z
 DTSTART;TZID=America/Los_Angeles:20260824T163000
@@ -105,45 +145,5 @@ SUMMARY:Sharknado 2 - JO
 DESCRIPTION:Full practice schedule (times\, locations & weekly changes):\nhttps://www.gomotionapp.com/team/spartansla/page/our-team/practice-schedule-and-monthly-fees\n\nSchedule changes weekly\; confirm with your coach.
 LOCATION:4463 Oak Grove Dr\, La Cañada Flintridge\, CA 91011
 TRANSP:TRANSPARENT
-END:VEVENT
-BEGIN:VEVENT
-UID:426892e1-7680-54c3-82ac-e1385e1e2fe9
-DTSTAMP:20260812T233257Z
-DTSTART;TZID=America/Los_Angeles:20260810T163000
-DTEND;TZID=America/Los_Angeles:20260810T173000
-SUMMARY:Sharknado 2 - Niyoosha
-DESCRIPTION:Spartans Swim Team Practice - Sharknado 2
-LOCATION:4463 Oak Grove Dr, La Cañada Flintridge, CA 91011
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
-UID:18c6aef7-8ba5-5d49-bee7-25c2f4cd76c6
-DTSTAMP:20260812T233257Z
-DTSTART;TZID=America/Los_Angeles:20260811T174500
-DTEND;TZID=America/Los_Angeles:20260811T190000
-SUMMARY:Sharknado 2 - Niyoosha
-DESCRIPTION:Spartans Swim Team Practice - Sharknado 2
-LOCATION:4463 Oak Grove Dr, La Cañada Flintridge, CA 91011
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
-UID:b50cab54-46be-582e-9c09-83b25c18a7c8
-DTSTAMP:20260812T233257Z
-DTSTART;TZID=America/Los_Angeles:20260812T180000
-DTEND;TZID=America/Los_Angeles:20260812T190000
-SUMMARY:Sharknado 2 - Yoga
-DESCRIPTION:Spartans Swim Team Practice - Sharknado 2
-LOCATION:4463 Oak Grove Dr, La Cañada Flintridge, CA 91011
-TRANSP:OPAQUE
-END:VEVENT
-BEGIN:VEVENT
-UID:ef17c31d-0ef7-5c9b-9a01-0e47de705a2d
-DTSTAMP:20260812T233257Z
-DTSTART;TZID=America/Los_Angeles:20260813T183000
-DTEND;TZID=America/Los_Angeles:20260813T193000
-SUMMARY:Sharknado 2 - SS
-DESCRIPTION:Spartans Swim Team Practice - Sharknado 2
-LOCATION:4463 Oak Grove Dr, La Cañada Flintridge, CA 91011
-TRANSP:OPAQUE
 END:VEVENT
 END:VCALENDAR
