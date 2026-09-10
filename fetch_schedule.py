@@ -77,15 +77,38 @@ def week_has_events_for_class(filepath, week_start):
     return any(start_str <= d <= end_str for d in dtstarts)
 
 
-def find_schedule_image_url(html_content):
-    """Extract the schedule image URL from the HTML"""
+def find_schedule_image_url(html_content, classes):
+    """Find the schedule image that covers the tracked classes.
+
+    The team's page now publishes several schedule images (one per cluster of
+    training groups, e.g. "weekly-schedule-heat-wave-sharknado-1-sharknado-2-...jpg"),
+    so match candidate filenames against slugified class names instead of
+    blindly taking the first image on the page.
+    """
     pattern = r'src="(/spartansla/UserFiles/Image/QuickUpload/[^"]+\.(?:jpg|jpeg|png))"'
     matches = re.findall(pattern, html_content, re.IGNORECASE)
-    
+
     if not matches:
         raise ValueError("Could not find schedule image in HTML")
-    
-    return "https://www.spartanswim.com" + matches[0]
+
+    class_slugs = [slugify(c) for c in classes]
+
+    # Prefer an image whose filename mentions every tracked class,
+    # then fall back to one mentioning any of them.
+    for slugs_needed in ([class_slugs] + [[s] for s in class_slugs]):
+        for match in matches:
+            if all(slug in match.lower() for slug in slugs_needed):
+                return "https://www.spartanswim.com" + match
+
+    # A single image with no class names in its filename is the old-style
+    # combined schedule — still the right one.
+    if len(matches) == 1:
+        return "https://www.spartanswim.com" + matches[0]
+
+    raise ValueError(
+        f"None of the schedule images on the page match the tracked classes "
+        f"({', '.join(classes)}). Images found:\n  " + "\n  ".join(matches)
+    )
 
 
 def download_image(url):
@@ -466,7 +489,7 @@ def main():
     html_content = response.text
     
     # Find and download schedule image
-    image_url = find_schedule_image_url(html_content)
+    image_url = find_schedule_image_url(html_content, classes)
     image_data, media_type = download_image(image_url)
     
     # Extract schedule using Claude
