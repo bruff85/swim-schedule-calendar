@@ -7,6 +7,56 @@ X-WR-CALNAME:Spartans - Sharknado 2
 X-WR-TIMEZONE:America/Los_Angeles
 X-PUBLISHED-TTL:P1W
 BEGIN:VEVENT
+UID:22dab2f8-cdfa-55d5-8741-aa34b961c6b5
+DTSTAMP:20260928T134034Z
+DTSTART;TZID=America/Los_Angeles:20260928T163000
+DTEND;TZID=America/Los_Angeles:20260928T173000
+SUMMARY:Sharknado 2 - Niyoosha
+DESCRIPTION:Full practice schedule (times\, locations & weekly changes):\nhttps://www.gomotionapp.com/team/spartansla/page/our-team/practice-schedule-and-monthly-fees\n\nSchedule changes weekly\; confirm with your coach.
+LOCATION:4463 Oak Grove Dr\, La Cañada Flintridge\, CA 91011
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:040fa9f2-446c-5da9-b3a4-433ddd8c424f
+DTSTAMP:20260928T134034Z
+DTSTART;TZID=America/Los_Angeles:20260929T163000
+DTEND;TZID=America/Los_Angeles:20260929T173000
+SUMMARY:Sharknado 2 - Niyoosha
+DESCRIPTION:Full practice schedule (times\, locations & weekly changes):\nhttps://www.gomotionapp.com/team/spartansla/page/our-team/practice-schedule-and-monthly-fees\n\nSchedule changes weekly\; confirm with your coach.
+LOCATION:4463 Oak Grove Dr\, La Cañada Flintridge\, CA 91011
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:6d463d68-e6cf-54c3-b333-eb22e2430a8d
+DTSTAMP:20260928T134034Z
+DTSTART;TZID=America/Los_Angeles:20260930T163000
+DTEND;TZID=America/Los_Angeles:20260930T173000
+SUMMARY:Sharknado 2 - Yoga
+DESCRIPTION:Full practice schedule (times\, locations & weekly changes):\nhttps://www.gomotionapp.com/team/spartansla/page/our-team/practice-schedule-and-monthly-fees\n\nSchedule changes weekly\; confirm with your coach.
+LOCATION:4463 Oak Grove Dr\, La Cañada Flintridge\, CA 91011
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:6e7e0efe-a838-52b0-9f1c-3040f0e0145b
+DTSTAMP:20260928T134034Z
+DTSTART;TZID=America/Los_Angeles:20261001T191500
+DTEND;TZID=America/Los_Angeles:20261001T201500
+SUMMARY:Sharknado 2 - Sheridan
+DESCRIPTION:Full practice schedule (times\, locations & weekly changes):\nhttps://www.gomotionapp.com/team/spartansla/page/our-team/practice-schedule-and-monthly-fees\n\nSchedule changes weekly\; confirm with your coach.
+LOCATION:4463 Oak Grove Dr\, La Cañada Flintridge\, CA 91011
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:a6d4b151-8d45-5d34-8018-9e8b399cb3b9
+DTSTAMP:20260928T134034Z
+DTSTART;TZID=America/Los_Angeles:20261003T103000
+DTEND;TZID=America/Los_Angeles:20261003T111500
+SUMMARY:Sharknado 2 - David
+DESCRIPTION:Full practice schedule (times\, locations & weekly changes):\nhttps://www.gomotionapp.com/team/spartansla/page/our-team/practice-schedule-and-monthly-fees\n\nSchedule changes weekly\; confirm with your coach.
+LOCATION:4463 Oak Grove Dr\, La Cañada Flintridge\, CA 91011
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
 UID:a50248a0-8aaa-5306-a965-b06e0f87d6dd
 DTSTAMP:20260921T134056Z
 DTSTART;TZID=America/Los_Angeles:20260921T163000
@@ -81,56 +131,6 @@ UID:029d09e5-6e9b-52c3-a6e7-2de143ce8597
 DTSTAMP:20260914T134204Z
 DTSTART;TZID=America/Los_Angeles:20260919T103000
 DTEND;TZID=America/Los_Angeles:20260919T113000
-SUMMARY:Sharknado 2 - David
-DESCRIPTION:Full practice schedule (times\, locations & weekly changes):\nhttps://www.gomotionapp.com/team/spartansla/page/our-team/practice-schedule-and-monthly-fees\n\nSchedule changes weekly\; confirm with your coach.
-LOCATION:4463 Oak Grove Dr\, La Cañada Flintridge\, CA 91011
-TRANSP:TRANSPARENT
-END:VEVENT
-BEGIN:VEVENT
-UID:3b348a60-e835-54fb-927f-11be044e462a
-DTSTAMP:20260910T224853Z
-DTSTART;TZID=America/Los_Angeles:20260907T163000
-DTEND;TZID=America/Los_Angeles:20260907T173000
-SUMMARY:Sharknado 2 - Niyoosha
-DESCRIPTION:Full practice schedule (times\, locations & weekly changes):\nhttps://www.gomotionapp.com/team/spartansla/page/our-team/practice-schedule-and-monthly-fees\n\nSchedule changes weekly\; confirm with your coach.
-LOCATION:4463 Oak Grove Dr\, La Cañada Flintridge\, CA 91011
-TRANSP:TRANSPARENT
-END:VEVENT
-BEGIN:VEVENT
-UID:ea007d74-ce91-5817-8f15-3b2f5cfb4e54
-DTSTAMP:20260910T224853Z
-DTSTART;TZID=America/Los_Angeles:20260908T163000
-DTEND;TZID=America/Los_Angeles:20260908T173000
-SUMMARY:Sharknado 2 - Niyoosha
-DESCRIPTION:Full practice schedule (times\, locations & weekly changes):\nhttps://www.gomotionapp.com/team/spartansla/page/our-team/practice-schedule-and-monthly-fees\n\nSchedule changes weekly\; confirm with your coach.
-LOCATION:4463 Oak Grove Dr\, La Cañada Flintridge\, CA 91011
-TRANSP:TRANSPARENT
-END:VEVENT
-BEGIN:VEVENT
-UID:fbd66452-bc9d-53c8-8a6a-6c537f5a0c95
-DTSTAMP:20260910T224853Z
-DTSTART;TZID=America/Los_Angeles:20260909T163000
-DTEND;TZID=America/Los_Angeles:20260909T173000
-SUMMARY:Sharknado 2 - Yoga
-DESCRIPTION:Full practice schedule (times\, locations & weekly changes):\nhttps://www.gomotionapp.com/team/spartansla/page/our-team/practice-schedule-and-monthly-fees\n\nSchedule changes weekly\; confirm with your coach.
-LOCATION:4463 Oak Grove Dr\, La Cañada Flintridge\, CA 91011
-TRANSP:TRANSPARENT
-END:VEVENT
-BEGIN:VEVENT
-UID:fcda6ef0-db52-5697-a4cc-6e594daf6df9
-DTSTAMP:20260910T224853Z
-DTSTART;TZID=America/Los_Angeles:20260910T183000
-DTEND;TZID=America/Los_Angeles:20260910T193000
-SUMMARY:Sharknado 2 - John
-DESCRIPTION:Full practice schedule (times\, locations & weekly changes):\nhttps://www.gomotionapp.com/team/spartansla/page/our-team/practice-schedule-and-monthly-fees\n\nSchedule changes weekly\; confirm with your coach.
-LOCATION:4463 Oak Grove Dr\, La Cañada Flintridge\, CA 91011
-TRANSP:TRANSPARENT
-END:VEVENT
-BEGIN:VEVENT
-UID:e90619b6-47c8-58ce-bb2a-992f0523b856
-DTSTAMP:20260910T224853Z
-DTSTART;TZID=America/Los_Angeles:20260912T103000
-DTEND;TZID=America/Los_Angeles:20260912T113000
 SUMMARY:Sharknado 2 - David
 DESCRIPTION:Full practice schedule (times\, locations & weekly changes):\nhttps://www.gomotionapp.com/team/spartansla/page/our-team/practice-schedule-and-monthly-fees\n\nSchedule changes weekly\; confirm with your coach.
 LOCATION:4463 Oak Grove Dr\, La Cañada Flintridge\, CA 91011
