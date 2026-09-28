@@ -16,7 +16,7 @@ from io import BytesIO
 import requests
 
 
-# Pool location mappings
+# Pool location mappings (codes match the schedule's color key)
 LOCATIONS = {
     "LCHS": {
         "name": "La Canada High School",
@@ -25,6 +25,18 @@ LOCATIONS = {
     "GHS": {
         "name": "Glendale High School",
         "address": "1440 E Broadway, Glendale, CA 91205"
+    },
+    "BG": {
+        "name": "Bell Gardens 50 Meter Pool",
+        "address": "7950 Scout Ave, Bell Gardens, CA 90201"
+    },
+    "FC": {
+        "name": "LCHS Fitness Center",
+        "address": "4463 Oak Grove Dr, La Cañada Flintridge, CA 91011"
+    },
+    "MPR": {
+        "name": "LCHS MPR",
+        "address": "4463 Oak Grove Dr, La Cañada Flintridge, CA 91011"
     }
 }
 
@@ -180,17 +192,23 @@ For each class, I need:
 - For each day of the week (Monday through Sunday), list all practice sessions with:
   - Start time in 24-hour format (see TIME RULES below)
   - End time
-  - Coach name (the text in each cell like "Niyoosha", "SS", "Yoga", "Kailee", etc.)
-  - Location: Check if the cell contains "@GHS" or "GHS" text. If yes, set location to "GHS". Otherwise set to "LCHS" (default)
+  - Coach name (from the coach column or "Coach: ..." text in the cell, e.g. "Niyoosha", "Sheridan", "David"; for Yoga/WUTS/FC cells without a coach, use the activity name)
+  - Location: use the cell's markers and the schedule's color key:
+    - "@GHS" or Glendale High School color -> "GHS"
+    - "@ Bell Gardens", "@BG" or Bell Gardens color -> "BG"
+    - "FC" (fitness center) sessions -> "FC"
+    - Yoga sessions -> "MPR"
+    - Otherwise -> "LCHS" (default; LCHS Mornings and LCHS afternoons are both "LCHS")
   - If a day shows "OFF", skip it (no practice that day)
 
 IMPORTANT TIME RULES:
-- Times written without AM/PM are afternoon/evening — convert to 24-hour PM (e.g. "4:30-6:00" means 16:30-18:00, "1:45-3:00" means 13:45-15:00)
+- The schedule may split each group into rows labeled by a Pool column (e.g. "Mornings" and "Afternoons"). A row's Mornings/Afternoons label and an explicit AM/PM marker on the time always take precedence — a bare time in a Mornings row is AM.
+- Only when a time has no AM/PM marker AND no labeled row: assume afternoon/evening — convert to 24-hour PM (e.g. "4:30-6:00" means 16:30-18:00, "1:45-3:00" means 13:45-15:00)
 - Monday-Friday practices for these classes ALWAYS start at 2 PM (14:00) or later. A weekday time before 14:00 is not a practice for these classes — skip it.
 - Saturday and Sunday practices may be in the morning (e.g. "7:50-10:00AM" means 07:50-10:00), but never run later than 8 PM (20:00).
 - The schedule occasionally has AM/PM typos: a weekend time marked "PM" that would start after 8 PM (e.g. "9:30-11:30PM") is really a morning practice — extract it as AM (09:30-11:30).
 - Use 24-hour format ONLY (14:30 for 2:30 PM)
-- Location must be either "GHS" or "LCHS" (normalize to these codes)
+- Location must be one of "LCHS", "GHS", "BG", "FC", "MPR" (normalize to these codes)
 
 Your ENTIRE response must be nothing but the JSON object itself — no preamble, no commentary, no explanation of what week it is, no markdown code fences. Do not write a sentence before the JSON. The very first character of your response must be {{ and the very last character must be }}.
 
@@ -405,7 +423,7 @@ def generate_ics_for_class(class_name, schedule, week_start, timezone):
                 f"DTEND;TZID={timezone}:{end_dt.strftime('%Y%m%dT%H%M%S')}",
                 f"SUMMARY:{class_name} - {coach}",
                 f"DESCRIPTION:{build_practice_description()}",
-                f"LOCATION:{ics_escape(location_address)}",
+                f"LOCATION:{ics_escape(f'{location_name}, {location_address}')}",
                 "TRANSP:TRANSPARENT",
                 "END:VEVENT"
             ]
